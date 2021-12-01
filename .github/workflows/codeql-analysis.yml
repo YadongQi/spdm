@@ -18,7 +18,7 @@ on:
     # The branches below must be a subset of the branches above
     branches: [ main ]
   schedule:
-    - cron: '17 13 * * 6'
+    - cron: '23 7 * * 2'
 
 jobs:
   analyze:
@@ -32,14 +32,25 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'cpp', 'python' ]
-        # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python' ]
-        # Learn more:
-        # https://docs.github.com/en/free-pro-team@latest/github/finding-security-vulnerabilities-and-errors-in-your-code/configuring-code-scanning#changing-the-languages-that-are-analyzed
+        language: [ 'cpp' ]
+        # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python', 'ruby' ]
+        # Learn more about CodeQL language support at https://git.io/codeql-language-support
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
+
+    - name: setup
+      run: |
+        whereis cmake
+        which cmake
+        sudo apt-get --quiet update --yes
+        sudo apt-get --quiet install --yes make build-essential gcc clang gcc-multilib lsb-release wget libtool autoconf unzip cmake llvm
+        cmake --version
+        whereis cmake
+        which cmake
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
@@ -53,8 +64,8 @@ jobs:
 
     # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
     # If this step fails, then you should remove it and run the build manually (see below)
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v1
+    #- name: Autobuild
+    #  uses: github/codeql-action/autobuild@v1
 
     # ℹ️ Command-line programs to run using the OS shell.
     # 📚 https://git.io/JvXDl
@@ -63,9 +74,19 @@ jobs:
     #    and modify them (or add more) to build your code if your project
     #    uses a compiled language
 
-    #- run: |
-    #   make bootstrap
-    #   make release
+    - run: |
+        /usr/bin/cmake --version
+        gcc --version
+        ar_version=$(gcc-ar --version)
+        ranlib_v=$(which ranlib)
+        echo "gcc-ar: ${ar_version}"
+        echo "ranlib: ${ranlib_v}"
+        mkdir build
+        cd build
+        /usr/bin/cmake -DARCH=x64 -DTOOLCHAIN=GCC -DTARGET=Release -DCRYPTO=mbedtls ..
+        cat os_stub/cryptlib_mbedtls/CMakeFiles/cryptlib_mbedtls.dir/link.txt 
+        make copy_sample_key
+        make
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1
